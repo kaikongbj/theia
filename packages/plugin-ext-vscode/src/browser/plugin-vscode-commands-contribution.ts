@@ -379,10 +379,10 @@ export class PluginVscodeCommandsContribution implements CommandContribution {
                 if (typeof vsixUriOrExtensionId === 'string') {
                     let extensionId = vsixUriOrExtensionId;
                     let opts: PluginDeployOptions | undefined;
-                    if (PluginIdentifiers.isVersionedId(vsixUriOrExtensionId)) {
-                        const idAndVersion = PluginIdentifiers.getIdAndVersion(vsixUriOrExtensionId);
-                        extensionId = idAndVersion[0];
-                        opts = { version: idAndVersion[1]!, ignoreOtherVersions: true };
+                    const versionedId = PluginIdentifiers.idAndVersionFromVersionedId(vsixUriOrExtensionId);
+                    if (versionedId) {
+                        extensionId = versionedId.id;
+                        opts = { version: versionedId.version, ignoreOtherVersions: true };
                     }
                     await this.pluginServer.deploy(VSCodeExtensionUri.fromId(extensionId).toString(), undefined, opts);
                 } else {
@@ -396,12 +396,11 @@ export class PluginVscodeCommandsContribution implements CommandContribution {
                 if (!id) {
                     throw new Error(nls.localizeByDefault('Extension id required.'));
                 }
-                if (!PluginIdentifiers.isVersionedId(id)) {
+                const idAndVersion = PluginIdentifiers.idAndVersionFromVersionedId(id);
+                if (!idAndVersion) {
                     throw new Error(`Invalid extension id: ${id}\nExpected format: <publisher>.<name>@<version>.`);
                 }
-                const idAndVersion = PluginIdentifiers.identifiersFromVersionedId(id);
-                const pluginId = PluginIdentifiers.componentsToVersionedId(idAndVersion!);
-                await this.pluginServer.uninstall(pluginId);
+                await this.pluginServer.uninstall(PluginIdentifiers.idAndVersionToVersionedId(idAndVersion));
             }
         });
         commands.registerCommand({ id: 'workbench.action.files.save', }, {
